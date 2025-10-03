@@ -1,7 +1,6 @@
 {
   "name": "whatsapp-bot-ui-vercel",
   "version": "1.0.0",
-  "description": "Interface de configuração para Bot de WhatsApp hospedada na Vercel.",
   "private": true,
   "scripts": {
     "start": "node server.js"
