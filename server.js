@@ -1,4 +1,4 @@
-// Arquivo: server.js (Modificado para usar a pasta raiz)
+// Arquivo: server.js (Ajustado para rodar com arquivos na raiz)
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -10,14 +10,14 @@ const PORT = 3000;
 const configKey = 'whatsapp-bot-config';
 
 app.use(express.json());
-// Alteração aqui: Servindo arquivos estáticos da pasta raiz do projeto.
+// Serve os arquivos estáticos (index.html, etc.) da pasta raiz
 app.use(express.static(__dirname));
 
-// Endpoint da API para desenvolvimento local, espelhando a função da Vercel
+// API para o servidor local
 app.get('/api/config', async (req, res) => {
     try {
         const config = await kv.get(configKey);
-        res.json(config || {}); // Retorna objeto vazio se config for null
+        res.json(config || {});
     } catch (err) {
         console.error("Erro ao ler config do KV (servidor local):", err);
         res.status(500).json({ error: 'Erro ao ler a configuração.' });
