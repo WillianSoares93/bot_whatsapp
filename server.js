@@ -1,5 +1,4 @@
-// Arquivo: server.js (Modificado)
-// A única alteração é na linha `app.use`, para servir os arquivos da raiz.
+// Arquivo: server.js (Modificado para usar a pasta raiz)
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -18,7 +17,7 @@ app.use(express.static(__dirname));
 app.get('/api/config', async (req, res) => {
     try {
         const config = await kv.get(configKey);
-        res.json(config);
+        res.json(config || {}); // Retorna objeto vazio se config for null
     } catch (err) {
         console.error("Erro ao ler config do KV (servidor local):", err);
         res.status(500).json({ error: 'Erro ao ler a configuração.' });
