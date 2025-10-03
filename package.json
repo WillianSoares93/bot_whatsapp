@@ -1,16 +1,19 @@
 {
-  "name": "whatsapp-bot-com-ui-vercel",
+  "name": "whatsapp-bot-ui-vercel",
   "version": "1.0.0",
-  "description": "Bot de WhatsApp com interface de configuração web na Vercel.",
-  "main": "server.js",
+  "description": "Interface de configuração para Bot de WhatsApp hospedada na Vercel.",
+  "private": true,
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "@vercel/kv": "^1.0.1",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
     "express": "^4.19.2",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.23.0"
   }
 }
+
