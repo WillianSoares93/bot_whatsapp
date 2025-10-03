@@ -1,21 +1,4 @@
 {
-  "version": 2,
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/$1"
-    },
-    {
-      "src": "/(index\\.html|script\\.js|style\\.css)",
-      "dest": "/$1",
-      "headers": {
-        "cache-control": "s-maxage=300"
-      }
-    },
-    {
-      "src": "/.*",
-      "dest": "index.html"
-    }
-  ]
+  "version": 2
 }
 
