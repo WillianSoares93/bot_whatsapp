@@ -1,49 +1,36 @@
-// Arquivo: api/config.js
-// Esta é uma Função Serverless que a Vercel usará.
-// Ela se conecta ao Vercel KV para ler e salvar as configurações.
+// Arquivo: /api/config.js
+// Esta é a função serverless que roda na Vercel para ler e salvar as configurações.
 
-const { kv } = require('@vercel/kv');
+import { kv } from '@vercel/kv';
 
-module.exports = async (req, res) => {
-  const configKey = 'whatsapp-bot-config';
-
-  // Se a requisição for GET, busca a configuração
-  if (req.method === 'GET') {
-    try {
-      let config = await kv.get(configKey);
-      // Se não houver configuração salva, retorna valores padrão
+export default async function handler(request, response) {
+  try {
+    if (request.method === 'GET') {
+      // Busca a configuração no banco de dados KV
+      let config = await kv.get('bot-config');
+      // Se não houver configuração, retorna valores padrão
       if (!config) {
         config = {
-          prefix: "-- *NOVO PEDIDO* --",
-          responseMessage: "Sua mensagem não parece ser um pedido. Por favor, use nosso cardápio online.",
-          sendSuccessMessage: true,
-          successMessage: "Pedido recebido com sucesso!",
-          enableTemporaryDisable: true,
-          disableDurationMinutes: 5
+          prefix: '-- *NOVO PEDIDO* --',
+          responseMessage: 'Sua mensagem padrão aqui.',
+          sendSuccessMessage: false,
+          successMessage: '',
+          enableTemporaryDisable: false,
+          disableDurationMinutes: 60,
         };
       }
-      return res.status(200).json(config);
-    } catch (error) {
-      console.error("Erro ao ler configuração do Vercel KV:", error);
-      return res.status(500).json({ error: 'Erro ao ler a configuração.' });
+      return response.status(200).json(config);
+    } else if (request.method === 'POST') {
+      // Salva a nova configuração no banco de dados KV
+      await kv.set('bot-config', request.body);
+      return response.status(200).json({ success: true, message: 'Configuração salva com sucesso!' });
+    } else {
+      // Método não permitido
+      return response.status(405).json({ error: 'Método não permitido' });
     }
+  } catch (error) {
+    console.error('Erro na API de configuração:', error);
+    return response.status(500).json({ error: 'Erro interno do servidor.' });
   }
+}
 
-  // Se a requisição for POST, salva a nova configuração
-  if (req.method === 'POST') {
-    try {
-      const newConfig = req.body;
-      if (newConfig.prefix === undefined || newConfig.responseMessage === undefined) {
-        return res.status(400).json({ error: 'Prefixo e mensagem de resposta são obrigatórios.' });
-      }
-      await kv.set(configKey, newConfig);
-      return res.status(200).json({ success: true, message: 'Configuração salva na Vercel!' });
-    } catch (error) {
-      console.error("Erro ao salvar configuração no Vercel KV:", error);
-      return res.status(500).json({ error: 'Erro ao salvar a configuração.' });
-    }
-  }
-
-  // Se for outro método (PUT, DELETE, etc.), retorna erro
-  return res.status(405).json({ error: `Método ${req.method} não permitido.` });
-};
