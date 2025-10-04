@@ -1,17 +1,16 @@
 {
-  "name": "whatsapp-bot-backend",
+  "name": "whatsapp-bot-project",
   "version": "1.0.0",
-  "description": "Backend para o Bot de WhatsApp com WebSocket",
-  "main": "server.js",
+  "description": "Bot de WhatsApp com painel de controle na Vercel e backend na Railway.",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "@vercel/kv": "^1.0.1",
     "express": "^4.19.2",
     "whatsapp-web.js": "^1.23.0",
-    "ws": "^8.14.2",
-    "dotenv": "^16.3.1"
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "qrcode-terminal": "^0.12.0"
