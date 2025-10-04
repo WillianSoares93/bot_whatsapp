@@ -4,12 +4,12 @@
 const { kv } = require('@vercel/kv');
 
 module.exports = async (request, response) => {
-  // Configurações de CORS para permitir que o painel e o bot comuniquem
+  // Configurações de CORS para permitir a comunicação entre Vercel e Railway
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Responde a pedidos pre-flight do CORS
+  // Responde a pedidos pre-flight (verificação) do CORS
   if (request.method === 'OPTIONS') {
     return response.status(200).end();
   }
@@ -38,7 +38,7 @@ module.exports = async (request, response) => {
     }
   } catch (error) {
     console.error('Erro na API de configuração:', error);
-    return response.status(500).json({ error: 'Erro interno do servidor ao aceder ao banco de dados.' });
+    return response.status(500).json({ error: 'Erro interno do servidor ao aceder à base de dados.' });
   }
 };
 
