@@ -1,9 +1,19 @@
 {
-  "name": "whatsapp-bot-ui-vercel",
+  "name": "whatsapp-bot-backend",
   "version": "1.0.0",
-  "private": true,
+  "description": "Backend para o Bot de WhatsApp com WebSocket",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "@vercel/kv": "^1.0.1"
+    "@vercel/kv": "^1.0.1",
+    "express": "^4.19.2",
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#webpack-exodus",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "qrcode-terminal": "^0.12.0"
   }
 }
 
