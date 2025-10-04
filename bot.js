@@ -1,16 +1,23 @@
 // Arquivo: bot.js
-// Versão final que usa o Vercel KV em vez de um arquivo local.
+// Versão final que se conecta ao Vercel KV de forma independente.
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
+const { createClient } = require('@vercel/kv');
 
 let client;
-let kv; // Variável para armazenar o cliente do banco de dados
 const temporarilyDisabled = {};
 
-// Função para o server.js "injetar" o cliente do banco de dados
-const setKvClient = (kvClient) => {
-  kv = kvClient;
-};
+// O bot agora cria sua própria conexão com o banco de dados
+const { KV_REST_API_URL, KV_REST_API_TOKEN } = process.env;
+if (!KV_REST_API_URL || !KV_REST_API_TOKEN) {
+    console.error("ERRO FATAL: Variáveis de ambiente KV não encontradas no bot.");
+    process.exit(1);
+}
+const kv = createClient({
+  url: KV_REST_API_URL,
+  token: KV_REST_API_TOKEN,
+});
+
 
 const getClient = () => client;
 
@@ -21,25 +28,15 @@ async function startBot() {
         authStrategy: new LocalAuth({ clientId: "bot-whatsapp" }),
         puppeteer: {
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'] // Args necessários para rodar em ambientes como a Railway
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         }
     });
-
-    // Os eventos de QR, Ready, etc., são agora emitidos para o WebSocket em server.js
-    // Aqui focamos apenas na lógica de mensagem.
 
     client.on('message_create', async (message) => {
         if (message.fromMe) return;
 
-        if (!kv) {
-            console.error("Cliente KV não inicializado. Não é possível processar a mensagem.");
-            return;
-        }
-
         try {
-            // Busca a configuração diretamente do Vercel KV
             const config = await kv.get('bot-config');
-
             if (!config) {
                 console.log("Nenhuma configuração encontrada no banco de dados.");
                 return;
@@ -50,7 +47,7 @@ async function startBot() {
             const now = Date.now();
 
             if (temporarilyDisabled[chatId] && now < temporarilyDisabled[chatId]) {
-                return; // Silenciosamente ignora se estiver desativado
+                return;
             }
             if (temporarilyDisabled[chatId]) {
                 delete temporarilyDisabled[chatId];
@@ -83,6 +80,6 @@ async function startBot() {
     });
 }
 
-// Exporta as funções necessárias
-module.exports = { startBot, getClient, setKvClient };
+// Exporta apenas as funções necessárias
+module.exports = { startBot, getClient };
 
