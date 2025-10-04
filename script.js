@@ -1,24 +1,23 @@
 // Arquivo: script.js
 
-// IMPORTANTE: Mude esta URL para a URL do seu bot na Railway (ex: wss://seu-bot-production.up.railway.app)
-const WEBSOCKET_URL = 'ws://localhost:3000'; 
+// Conexão com o bot rodando na Railway
+const WEBSOCKET_URL = 'wss://botwhatsapp-production-a015.up.railway.app';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Lógica do formulário (existente)
     const form = document.getElementById('config-form');
     const statusMessage = document.getElementById('status-message');
+
+    // --- Elementos da Interface (UI) ---
     const sendSuccessMessageCheckbox = document.getElementById('sendSuccessMessage');
     const successMessageGroup = document.getElementById('success-message-group');
     const enableTemporaryDisableCheckbox = document.getElementById('enableTemporaryDisable');
     const disableDurationGroup = document.getElementById('disable-duration-group');
 
-    // Novos elementos para status do bot e QR Code
-    const statusIndicator = document.getElementById('status-indicator');
+    // --- Elementos de Status do Bot ---
+    const botStatusDiv = document.getElementById('bot-status');
+    const statusIcon = document.getElementById('status-icon');
     const statusText = document.getElementById('status-text');
-    const qrContainer = document.getElementById('qr-container');
-    const qrcodeElement = document.getElementById('qrcode');
-    const reconnectButton = document.getElementById('reconnect-button');
-    let qrCodeInstance = null;
+    const qrCodeContainer = document.getElementById('qrcode');
 
     function toggleSuccessMessage() {
         successMessageGroup.style.display = sendSuccessMessageCheckbox.checked ? 'block' : 'none';
@@ -31,9 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
     sendSuccessMessageCheckbox.addEventListener('change', toggleSuccessMessage);
     enableTemporaryDisableCheckbox.addEventListener('change', toggleDisableDuration);
 
-    // Carregar configuração do formulário
+    // Carregar configuração inicial da API da Vercel
     fetch('/api/config')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Falha ao carregar configuração.');
+            }
+            return response.json();
+        })
         .then(data => {
             form.prefix.value = data.prefix || '';
             form.responseMessage.value = data.responseMessage || '';
@@ -44,15 +48,21 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleSuccessMessage();
             toggleDisableDuration();
         })
-        .catch(error => console.error('Erro ao carregar configuração:', error));
+        .catch(error => {
+            console.error('Erro ao carregar configuração:', error);
+            statusMessage.textContent = 'Erro ao carregar configuração.';
+            statusMessage.className = 'error';
+        });
 
-    // Salvar configuração do formulário
+    // Evento de submit do formulário para salvar a configuração
     form.addEventListener('submit', (event) => {
         event.preventDefault();
         const formData = new FormData(form);
-        const config = Object.fromEntries(formData.entries());
-        config.sendSuccessMessage = sendSuccessMessageCheckbox.checked;
-        config.enableTemporaryDisable = enableTemporaryDisableCheckbox.checked;
+        const configData = Object.fromEntries(formData.entries());
+
+        // Converte os checkboxes para booleanos
+        configData.sendSuccessMessage = sendSuccessMessageCheckbox.checked;
+        configData.enableTemporaryDisable = enableTemporaryDisableCheckbox.checked;
 
         statusMessage.textContent = 'Salvando...';
         statusMessage.className = '';
@@ -60,14 +70,20 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config),
+            body: JSON.stringify(configData),
         })
         .then(response => response.json())
         .then(data => {
-            statusMessage.textContent = data.success ? 'Configuração salva!' : 'Erro ao salvar.';
-            statusMessage.className = data.success ? 'success' : 'error';
+            if (data.success) {
+                statusMessage.textContent = data.message;
+                statusMessage.className = 'success';
+            } else {
+                statusMessage.textContent = data.error || 'Ocorreu um erro.';
+                statusMessage.className = 'error';
+            }
         })
-        .catch(() => {
+        .catch(error => {
+            console.error('Erro ao salvar configuração:', error);
             statusMessage.textContent = 'Erro de conexão ao salvar.';
             statusMessage.className = 'error';
         })
@@ -79,77 +95,64 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- LÓGICA DO WEBSOCKET ---
+    // --- LÓGICA DO WEBSOCKET PARA O STATUS DO BOT ---
+    let socket;
+
     function connectWebSocket() {
         console.log(`Conectando ao bot em ${WEBSOCKET_URL}...`);
-        statusText.textContent = 'Conectando ao servidor do bot...';
-        statusIndicator.className = 'connecting';
-        qrContainer.style.display = 'none';
-        reconnectButton.style.display = 'none';
+        socket = new WebSocket(WEBSOCKET_URL);
 
-        const socket = new WebSocket(WEBSOCKET_URL);
-
-        socket.onopen = () => {
-            console.log('Conexão WebSocket estabelecida.');
-            statusText.textContent = 'Aguardando QR Code...';
+        socket.onopen = function() {
+            console.log("Conexão WebSocket estabelecida.");
+            statusIcon.className = 'status-icon connecting';
+            statusText.textContent = 'Conectado ao servidor. Aguardando status do bot...';
         };
 
-        socket.onmessage = (event) => {
+        socket.onmessage = function(event) {
             const message = JSON.parse(event.data);
-            console.log('Mensagem recebida do bot:', message.type);
-
             switch (message.type) {
                 case 'qr':
-                    statusText.textContent = 'QR Code recebido! Escaneie por favor.';
-                    qrContainer.style.display = 'block';
-                    // Limpa o QR code antigo e gera um novo
-                    if (qrCodeInstance) {
-                        qrCodeInstance.clear();
-                        qrCodeInstance.makeCode(message.data);
-                    } else {
-                        qrCodeInstance = new QRCode(qrcodeElement, {
-                            text: message.data,
-                            width: 256,
-                            height: 256,
-                            colorDark: "#000000",
-                            colorLight: "#ffffff",
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
-                    }
+                    statusIcon.className = 'status-icon disconnected';
+                    statusText.textContent = 'Aguardando conexão! Escaneie o QR Code abaixo:';
+                    qrCodeContainer.innerHTML = ''; // Limpa QR anterior
+                    new QRCode(qrCodeContainer, {
+                        text: message.data,
+                        width: 200,
+                        height: 200,
+                    });
                     break;
                 case 'ready':
-                    statusText.textContent = 'Bot conectado ao WhatsApp!';
-                    statusIndicator.className = 'connected';
-                    qrContainer.style.display = 'none';
+                    statusIcon.className = 'status-icon connected';
+                    statusText.textContent = 'Bot conectado ao WhatsApp e pronto!';
+                    qrCodeContainer.innerHTML = '<p>Conectado!</p>';
                     break;
                 case 'disconnected':
-                    statusText.textContent = 'Bot desconectado do WhatsApp.';
-                    statusIndicator.className = 'disconnected';
-                    qrContainer.style.display = 'none';
+                    statusIcon.className = 'status-icon disconnected';
+                    statusText.textContent = `Bot desconectado. Motivo: ${message.data}`;
+                    qrCodeContainer.innerHTML = '';
                     break;
                 case 'auth_failure':
-                    statusText.textContent = 'Falha na autenticação. Recarregue e tente um novo QR Code.';
-                    statusIndicator.className = 'disconnected';
+                     statusIcon.className = 'status-icon disconnected';
+                    statusText.textContent = `Falha na autenticação: ${message.data}`;
+                    qrCodeContainer.innerHTML = '';
                     break;
             }
         };
 
-        socket.onclose = () => {
-            console.log('Conexão WebSocket fechada.');
-            statusText.textContent = 'Desconectado. Clique para reconectar.';
-            statusIndicator.className = 'disconnected';
-            reconnectButton.style.display = 'block';
+        socket.onclose = function() {
+            console.log("Conexão WebSocket fechada.");
+            statusIcon.className = 'status-icon disconnected';
+            statusText.textContent = 'Desconectado do servidor do bot. Tentando reconectar em 5 segundos...';
+            qrCodeContainer.innerHTML = '';
+            setTimeout(connectWebSocket, 5000); // Tenta reconectar
         };
 
-        socket.onerror = (error) => {
-            console.error('Erro no WebSocket:', error);
-            statusText.textContent = 'Erro de conexão com o bot.';
-            statusIndicator.className = 'disconnected';
+        socket.onerror = function(error) {
+            console.error("Erro no WebSocket:", error);
+            statusText.textContent = 'Erro de conexão com o servidor do bot.';
         };
     }
 
-    reconnectButton.addEventListener('click', connectWebSocket);
-
-    // Inicia a primeira conexão
-    connectWebSocket();
+    connectWebSocket(); // Inicia a conexão
 });
+
