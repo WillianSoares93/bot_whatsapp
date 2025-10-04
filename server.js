@@ -4,27 +4,13 @@
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
-const { startBot, getClient, setKvClient } = require('./bot');
-const { createClient } = require('@vercel/kv');
+const { startBot, getClient } = require('./bot');
 
-const { KV_REST_API_URL, KV_REST_API_TOKEN, PORT = 3000 } = process.env;
-
-if (!KV_REST_API_URL || !KV_REST_API_TOKEN) {
-    console.error("ERRO FATAL: Variáveis de ambiente KV_REST_API_URL e KV_REST_API_TOKEN não encontradas.");
-    process.exit(1);
-}
+const { PORT = 3000 } = process.env;
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-
-const kv = createClient({
-  url: KV_REST_API_URL,
-  token: KV_REST_API_TOKEN,
-});
-
-// Injeta o cliente do banco de dados no módulo do bot.
-setKvClient(kv);
 
 wss.on('connection', (ws) => {
     console.log('Painel de controle conectado via WebSocket.');
@@ -47,7 +33,6 @@ wss.on('connection', (ws) => {
 
         Object.keys(listeners).forEach(event => emitter.on(event, listeners[event]));
 
-        // Envia status atual
         client.getState().then(state => {
             if (state === 'CONNECTED') sendStatus('ready');
         }).catch(() => {});
@@ -61,7 +46,7 @@ wss.on('connection', (ws) => {
 
 server.listen(PORT, () => {
     console.log(`🚀 Servidor escutando na porta ${PORT}`);
-    startBot();
+    startBot(); // O bot agora se inicializa de forma independente
 });
 
 process.on('SIGINT', async () => {
