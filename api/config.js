@@ -18,7 +18,7 @@ module.exports = async (request, response) => {
     if (request.method === 'GET') {
       let config = await kv.get('bot-config');
       if (!config) {
-        // Se não houver configuração, retorna valores padrão para evitar erros
+        // Se não houver configuração, retorna valores padrão para evitar erros no frontend
         config = {
           prefix: '',
           responseMessage: '',
