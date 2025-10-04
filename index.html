@@ -8,8 +8,25 @@
 </head>
 <body>
     <div class="container">
-        <h1>Configuração do Bot de WhatsApp</h1>
-        <p>Altere o prefixo esperado e as mensagens de resposta. As alterações são aplicadas em tempo real.</p>
+        <!-- Seção de Status e QR Code -->
+        <div id="bot-status-section">
+            <h2>Status do Bot</h2>
+            <div id="status-display">
+                <div id="status-indicator" class="disconnected"></div>
+                <p id="status-text">Desconectado</p>
+            </div>
+            <div id="qr-container">
+                <p>Escaneie o QR Code com seu WhatsApp:</p>
+                <div id="qrcode"></div>
+                 <small>O QR Code pode demorar até 30 segundos para aparecer após iniciar o bot.</small>
+            </div>
+             <button id="reconnect-button" style="display: none;">Reconectar Bot</button>
+        </div>
+
+        <hr>
+
+        <h1>Configuração de Mensagens</h1>
+        <p>Altere o prefixo e as mensagens de resposta. As alterações são aplicadas em tempo real.</p>
         
         <form id="config-form">
             <div class="form-group">
@@ -62,6 +79,8 @@
         <p id="status-message"></p>
     </div>
 
+    <!-- Biblioteca para gerar o QR Code -->
+    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs/qrcode.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
