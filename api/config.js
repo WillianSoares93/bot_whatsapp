@@ -4,22 +4,24 @@
 const { kv } = require('@vercel/kv');
 
 module.exports = async (request, response) => {
+  // Configurações de CORS para permitir que o painel e o bot comuniquem
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Responde a pedidos pre-flight do CORS
+  if (request.method === 'OPTIONS') {
+    return response.status(200).end();
+  }
+
   try {
-    // Garante que o CORS permita a comunicação entre Vercel e Railway
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (request.method === 'OPTIONS') {
-        return response.status(200).end();
-    }
-
     if (request.method === 'GET') {
       let config = await kv.get('bot-config');
       if (!config) {
+        // Se não houver configuração, retorna valores padrão para evitar erros
         config = {
-          prefix: '-- *NOVO PEDIDO* --',
-          responseMessage: 'Sua mensagem padrão aqui.',
+          prefix: '',
+          responseMessage: '',
           sendSuccessMessage: false,
           successMessage: '',
           enableTemporaryDisable: false,
@@ -27,18 +29,16 @@ module.exports = async (request, response) => {
         };
       }
       return response.status(200).json(config);
-    } 
-    
-    if (request.method === 'POST') {
+
+    } else if (request.method === 'POST') {
       await kv.set('bot-config', request.body);
-      return response.status(200).json({ success: true, message: 'Configuração salva com sucesso!' });
-    } 
-    
-    return response.status(405).json({ error: 'Método não permitido' });
-    
+      return response.status(200).json({ success: true, message: 'Configuração salva!' });
+    } else {
+      return response.status(405).json({ error: 'Método não permitido' });
+    }
   } catch (error) {
     console.error('Erro na API de configuração:', error);
-    return response.status(500).json({ error: 'Erro interno do servidor.' });
+    return response.status(500).json({ error: 'Erro interno do servidor ao aceder ao banco de dados.' });
   }
 };
 
