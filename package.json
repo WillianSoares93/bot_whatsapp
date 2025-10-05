@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-bot-project",
   "version": "1.0.0",
-  "description": "Bot de WhatsApp com painel de controle na Vercel e backend na Railway.",
+  "description": "Bot de WhatsApp com painel de controle.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
